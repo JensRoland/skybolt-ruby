@@ -27,4 +27,4 @@ jobs:
       - name: Publish to RubyGems
         uses: rubygems/release-gem@v1
         # Uses trusted publishing (OIDC) - no API key needed
-        # Configure at: https://rubygems.org/gems/skybolt-ruby/trusted_publishers
+        # Configure at: https://rubygems.org/gems/skybolt/trusted_publishers

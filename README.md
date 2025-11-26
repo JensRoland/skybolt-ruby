@@ -7,7 +7,7 @@ Ruby adapter for [Skybolt](https://github.com/JensRoland/skybolt) - High-perform
 Add to your Gemfile:
 
 ```ruby
-gem "skybolt-ruby"
+gem "skybolt"
 ```
 
 Then run:
@@ -266,20 +266,21 @@ end
 
 This package is maintained in the [Skybolt monorepo](https://github.com/JensRoland/skybolt) and automatically synced to [skybolt-ruby](https://github.com/JensRoland/skybolt-ruby).
 
-To publish a new version:
-
-1. In the **monorepo**, update the version in `packages/ruby/skybolt.gemspec` and push to main
-2. Wait for the sync workflow to push changes to the split repo
-3. In the **split repo** (skybolt-ruby), create and push a tag:
+To publish a new version, run one command from the `packages/ruby` directory:
 
 ```sh
-git clone git@github.com:JensRoland/skybolt-ruby.git
-cd skybolt-ruby
-git tag v3.1.0
-git push origin v3.1.0
+./scripts/release.sh patch   # 3.1.0 → 3.1.1
+./scripts/release.sh minor   # 3.1.0 → 3.2.0
+./scripts/release.sh major   # 3.1.0 → 4.0.0
 ```
 
-The `publish.yml` GitHub Action will automatically build and publish the gem to RubyGems using trusted publishing (OIDC).
+This automatically:
+
+1. Bumps the version in `VERSION`, `skybolt.gemspec`, and `lib/skybolt/version.rb`
+2. Commits and pushes to the monorepo
+3. Sync workflow pushes changes to the split repo
+4. `tag-version.yml` in the split repo creates the `v*` tag
+5. `publish.yml` builds and publishes to RubyGems using trusted publishing (OIDC)
 
 ## License
 

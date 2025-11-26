@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 Gem::Specification.new do |spec|
-  spec.name = "skybolt-ruby"
+  spec.name = "skybolt"
   spec.version = "3.1.0"
   spec.authors = ["Jens Roland"]
   spec.email = ["mail@jensroland.com"]
