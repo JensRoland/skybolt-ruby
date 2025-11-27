@@ -271,26 +271,6 @@ end
 - Ruby 3.0+
 - Vite with `@skybolt/vite-plugin`
 
-## Publishing
-
-This package is maintained in the [Skybolt monorepo](https://github.com/JensRoland/skybolt) and automatically synced to [skybolt-ruby](https://github.com/JensRoland/skybolt-ruby).
-
-To publish a new version, run one command from the `packages/ruby` directory:
-
-```sh
-./scripts/release.sh patch   # 3.1.0 → 3.1.1
-./scripts/release.sh minor   # 3.1.0 → 3.2.0
-./scripts/release.sh major   # 3.1.0 → 4.0.0
-```
-
-This automatically:
-
-1. Bumps the version in `VERSION`, `skybolt.gemspec`, and `lib/skybolt/version.rb`
-2. Commits and pushes to the monorepo
-3. Sync workflow pushes changes to the split repo
-4. `tag-version.yml` in the split repo creates the `v*` tag
-5. `publish.yml` builds and publishes to RubyGems using trusted publishing (OIDC)
-
 ## License
 
 MIT
