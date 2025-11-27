@@ -1,4 +1,4 @@
-name: Tag Version
+name: Tag and Publish
 
 on:
   push:
@@ -8,10 +8,12 @@ on:
       - 'VERSION'
 
 jobs:
-  tag:
+  tag-and-publish:
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       contents: write
+      id-token: write  # Required for trusted publishing
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,3 +44,20 @@ jobs:
       - name: Skip (tag exists)
         if: steps.check_tag.outputs.exists == 'true'
         run: echo "Tag v${{ steps.version.outputs.version }} already exists, skipping"
+
+      # Publish to RubyGems
+      - name: Set up Ruby
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+
+      - name: Build gem
+        if: steps.check_tag.outputs.exists == 'false'
+        run: gem build skybolt.gemspec
+
+      - name: Publish to RubyGems
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: rubygems/release-gem@v1
+        # Uses trusted publishing (OIDC) - no API key needed
+        # Configure at: https://rubygems.org/gems/skybolt/trusted_publishers
