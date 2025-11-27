@@ -56,8 +56,12 @@ jobs:
         if: steps.check_tag.outputs.exists == 'false'
         run: gem build skybolt.gemspec
 
-      - name: Publish to RubyGems
+      - name: Configure RubyGems credentials
         if: steps.check_tag.outputs.exists == 'false'
-        uses: rubygems/release-gem@v1
+        uses: rubygems/configure-rubygems-credentials@v1.0.0
         # Uses trusted publishing (OIDC) - no API key needed
         # Configure at: https://rubygems.org/gems/skybolt/trusted_publishers
+
+      - name: Publish to RubyGems
+        if: steps.check_tag.outputs.exists == 'false'
+        run: gem push skybolt-${{ steps.version.outputs.version }}.gem
