@@ -73,15 +73,24 @@ sb = Skybolt::Renderer.new(
 )
 ```
 
-### `css(entry) -> String`
+### `css(entry, async: false) -> String`
 
 Render CSS asset.
 
 - First visit: Inlines CSS with caching attributes
 - Repeat visit: Outputs `<link>` tag (Service Worker serves from cache)
 
+When `async:` is `true`, CSS loads non-blocking:
+
+- First visit: Uses `media="print"` trick, swaps to `all` on load
+- Repeat visit: Uses `<link rel="preload">` with `onload`
+
 ```ruby
-sb.css("src/css/main.css")
+# Blocking (default) - for critical CSS
+sb.css("src/css/critical.css")
+
+# Non-blocking - for non-critical CSS
+sb.css("src/css/main.css", async: true)
 ```
 
 ### `script(entry, is_module: true) -> String`

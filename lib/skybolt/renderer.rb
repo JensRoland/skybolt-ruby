@@ -26,8 +26,9 @@ module Skybolt
     # On repeat visit: outputs <link> tag (Service Worker serves from cache)
     #
     # @param entry [String] Source file path (e.g., 'src/css/main.css')
+    # @param async [Boolean] Load CSS asynchronously (non-render-blocking)
     # @return [String] HTML string
-    def css(entry)
+    def css(entry, async: false)
       asset = @map.dig("assets", entry)
       return comment("Skybolt: asset not found: #{entry}") if asset.nil?
 
@@ -35,10 +36,20 @@ module Skybolt
 
       # Client has current version - external link (SW serves from cache)
       if cached?(entry, asset["hash"])
+        if async
+          # Preload + onload swap for non-blocking load
+          return %(<link rel="preload" href="#{esc(url)}" as="style" onload="this.rel='stylesheet'">) +
+                 %(<noscript><link rel="stylesheet" href="#{esc(url)}"></noscript>)
+        end
         return %(<link rel="stylesheet" href="#{esc(url)}">)
       end
 
       # First visit - inline with cache attributes
+      if async
+        # media="print" trick: browser parses but doesn't apply until onload swaps to "all"
+        return %(<style media="print" onload="this.media='all'" sb-asset="#{esc(entry)}:#{esc(asset["hash"])}" sb-url="#{esc(url)}">#{asset["content"]}</style>)
+      end
+
       %(<style sb-asset="#{esc(entry)}:#{esc(asset["hash"])}" sb-url="#{esc(url)}">#{asset["content"]}</style>)
     end
 
