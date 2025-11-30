@@ -110,12 +110,29 @@ module Skybolt
     # Call this once in <head> before other Skybolt assets.
     # Outputs config meta tag and client script.
     #
+    # On first visit (or cache miss), the launcher is inlined with sb-asset
+    # and sb-url attributes so the client can cache itself.
+    #
+    # On repeat visits (cache hit), returns an external script tag. The Service
+    # Worker will serve the launcher from cache (~5ms response time).
+    #
     # @return [String] HTML string
     def launch_script
       sw_path = @map.dig("serviceWorker", "path") || "/skybolt-sw.js"
       config = { swPath: sw_path }.to_json
 
-      %(<meta name="skybolt-config" content="#{esc(config)}">\n<script type="module">#{@map.dig("client", "script")}</script>)
+      launcher = @map["launcher"]
+      url = resolve_url(launcher["url"])
+
+      meta = %(<meta name="skybolt-config" content="#{esc(config)}">\n)
+
+      if cached?("skybolt-launcher", launcher["hash"])
+        # Repeat visit - external script (SW serves from cache)
+        return %(#{meta}<script type="module" src="#{esc(url)}"></script>)
+      end
+
+      # First visit - inline with sb-asset and sb-url for self-caching
+      %(#{meta}<script type="module" sb-asset="skybolt-launcher:#{esc(launcher["hash"])}" sb-url="#{esc(url)}">#{launcher["content"]}</script>)
     end
 
     # Get URL for an asset (for manual use cases).
@@ -133,6 +150,41 @@ module Skybolt
     # @return [String, nil] Asset hash or nil if not found
     def asset_hash(entry)
       @map.dig("assets", entry, "hash")
+    end
+
+    # Check if an asset URL is currently cached by the client.
+    #
+    # This is useful for Chain Lightning integration where we need to check
+    # cache status by URL rather than source path.
+    #
+    # @param url [String] The asset URL (e.g., '/assets/main-Abc123.css')
+    # @return [Boolean] True if the asset is cached
+    def cached_url?(url)
+      # Build URL to entry mapping if not already built
+      @url_to_entry ||= begin
+        mapping = {}
+        (@map["assets"] || {}).each do |entry, asset|
+          mapping[asset["url"]] = { "entry" => entry, "hash" => asset["hash"] }
+        end
+        mapping
+      end
+
+      info = @url_to_entry[url]
+      return false if info.nil?
+
+      cached?(info["entry"], info["hash"])
+    end
+
+    # Check if client has a specific entry:hash pair cached.
+    #
+    # Useful for external integrations (like Chain Lightning) that manage
+    # their own assets outside of Skybolt's render-map.
+    #
+    # @param entry [String] The entry name (e.g., 'chain-lightning' or 'cl-manifest')
+    # @param hash [String] The expected hash value
+    # @return [Boolean] True if the entry:hash pair is in the client's cache
+    def cached_entry?(entry, hash)
+      cached?(entry, hash)
     end
 
     private
