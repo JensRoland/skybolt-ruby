@@ -2,7 +2,7 @@
 
 require "json"
 require "cgi"
-require "uri"
+require_relative "cache_digest"
 
 module Skybolt
   # Skybolt asset renderer.
@@ -16,8 +16,10 @@ module Skybolt
     def initialize(render_map_path, cookies: nil, cdn_url: nil)
       json = File.read(render_map_path)
       @map = JSON.parse(json)
-      @client_cache = parse_cookie((cookies || {})["sb_assets"] || "")
       @cdn_url = cdn_url&.chomp("/")
+
+      # Parse Cache Digest from sb_digest cookie
+      @cache_digest = CacheDigest.from_base64((cookies || {})["sb_digest"] || "")
     end
 
     # Render CSS asset.
@@ -197,26 +199,7 @@ module Skybolt
     end
 
     def cached?(entry, hash)
-      @client_cache[entry] == hash
-    end
-
-    def parse_cookie(cookie)
-      return {} if cookie.empty?
-
-      decoded = URI.decode_www_form_component(cookie)
-      cache = {}
-
-      decoded.split(",").each do |pair|
-        # Find last colon (hash doesn't contain colons, but paths might)
-        colon_pos = pair.rindex(":")
-        next if colon_pos.nil?
-
-        name = pair[0...colon_pos]
-        hash = pair[(colon_pos + 1)..]
-        cache[name] = hash
-      end
-
-      cache
+      @cache_digest.lookup("#{entry}:#{hash}")
     end
 
     def build_tag(tag, attrs)
